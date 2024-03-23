@@ -17,7 +17,7 @@ class Parakolay {
   late String nonce;
   late String signature;
 
-  late int amount;
+  late double amount;
   late String currency;
   late String cardholderName;
   late String cardToken;
@@ -54,30 +54,45 @@ class Parakolay {
       String expireMonth,
       String expireYear,
       String cvc,
-      int amount,
-      int pointAmout,
+      double amount,
+      double pointAmout,
       String callbackURL,
       {String currency = "TRY",
       String languageCode = "TR"}) async {
-    cardToken = await getCardToken(
+    cardToken = await _getCardToken(
         cardNumber, cardholderName, expireMonth, expireYear, cvc);
     threeDSessionID =
-        await get3DSession(amount, pointAmout, currency, languageCode);
-    String threedDinitResult = await get3DInit(callbackURL, languageCode);
+        await _get3DSession(amount, pointAmout, currency, languageCode);
+    String threedDinitResult = await _get3DInit(callbackURL, languageCode);
+
     return threedDinitResult;
   }
 
+  Future<String> getPoints(
+    String cardNumber,
+    String cardholderName,
+    String expireMonth,
+    String expireYear,
+    String cvc,
+  ) async {
+    cardToken = await _getCardToken(
+        cardNumber, cardholderName, expireMonth, expireYear, cvc);
+    var pointsResult = await _pointInquiry(cardToken);
+
+    return pointsResult;
+  }
+
   Future<String> complete3DS() async {
-    String result = await get3DSessionResult();
+    String result = await _get3DSessionResult();
     if (result == "VerificationFinished") {
-      var provisionResult = await provision();
+      var provisionResult = await _provision();
       return provisionResult;
     } else {
       return "Error";
     }
   }
 
-  Future<String> getCardToken(String cardNumber, String cardholderName,
+  Future<String> _getCardToken(String cardNumber, String cardholderName,
       String expireMonth, String expireYear, String cvc) async {
     this.cardholderName = cardholderName;
 
@@ -117,8 +132,8 @@ class Parakolay {
     }
   }
 
-  Future<String> get3DSession(
-      int amount, int pointAmount, String currency, String languageCode) async {
+  Future<String> _get3DSession(double amount, double pointAmount,
+      String currency, String languageCode) async {
     this.amount = amount;
     this.currency = currency;
 
@@ -155,7 +170,7 @@ class Parakolay {
     }
   }
 
-  Future<String> get3DInit(String callbackURL, String languageCode) async {
+  Future<String> _get3DInit(String callbackURL, String languageCode) async {
     var request =
         http.MultipartRequest('POST', Uri.parse('$baseUrl/v1/threeds/init3ds'));
 
@@ -189,7 +204,7 @@ class Parakolay {
     }
   }
 
-  Future<String> get3DSessionResult({String languageCode = "TR"}) async {
+  Future<String> _get3DSessionResult({String languageCode = "TR"}) async {
     var request = http.Request(
         'POST', Uri.parse('$baseUrl/v1/threeds/getthreedsessionresult'));
 
@@ -216,7 +231,7 @@ class Parakolay {
     }
   }
 
-  Future<String> provision() async {
+  Future<String> _provision() async {
     var request =
         http.Request('POST', Uri.parse('$baseUrl/v1/Payments/provision'));
     request.headers.addAll(headers3dSession);
@@ -228,6 +243,141 @@ class Parakolay {
       'paymentType': 'Auth',
       'cardHolderName': cardholderName,
       'threeDSessionId': threeDSessionID,
+    });
+
+    try {
+      http.StreamedResponse response = await request.send();
+
+      if (response.statusCode == 200) {
+        var decodedResponse = jsonDecode(await response.stream.bytesToString());
+        if (checkError(decodedResponse)) {
+          return decodedResponse.toString();
+        } else {
+          return 'Error: ${decodedResponse['errorMessage']}';
+        }
+      } else {
+        return 'Error: ${response.reasonPhrase}';
+      }
+    } catch (e) {
+      return 'Error: ${e.toString()}';
+    }
+  }
+
+  Future<String> reverse(String orderID, {String languageCode = "TR"}) async {
+    var request =
+        http.Request('POST', Uri.parse('$baseUrl/v1/Payments/reverse'));
+    request.headers.addAll(headers3dSession);
+
+    request.body =
+        json.encode({'orderid': orderID, 'languageCode': languageCode});
+
+    try {
+      http.StreamedResponse response = await request.send();
+
+      if (response.statusCode == 200) {
+        var decodedResponse = jsonDecode(await response.stream.bytesToString());
+        if (checkError(decodedResponse)) {
+          return decodedResponse.toString();
+        } else {
+          return 'Error: ${decodedResponse['errorMessage']}';
+        }
+      } else {
+        return 'Error: ${response.reasonPhrase}';
+      }
+    } catch (e) {
+      return 'Error: ${e.toString()}';
+    }
+  }
+
+  Future<String> returnAmount(double amount, String orderID,
+      {String languageCode = "TR"}) async {
+    var request =
+        http.Request('POST', Uri.parse('$baseUrl/v1/Payments/return'));
+    request.headers.addAll(headers3dSession);
+
+    request.body = json.encode(
+        {'orderid': orderID, 'amount': amount, 'languageCode': languageCode});
+
+    try {
+      http.StreamedResponse response = await request.send();
+
+      if (response.statusCode == 200) {
+        var decodedResponse = jsonDecode(await response.stream.bytesToString());
+        if (checkError(decodedResponse)) {
+          return decodedResponse.toString();
+        } else {
+          return 'Error: ${decodedResponse['errorMessage']}';
+        }
+      } else {
+        return 'Error: ${response.reasonPhrase}';
+      }
+    } catch (e) {
+      return 'Error: ${e.toString()}';
+    }
+  }
+
+  Future<String> binInfo(String binNumber, {String languageCode = "TR"}) async {
+    var request =
+        http.Request('POST', Uri.parse('$baseUrl/v1/Payments/bin-information'));
+    request.headers.addAll(headers3dSession);
+
+    request.body =
+        json.encode({'binNumber': binNumber, 'languageCode': languageCode});
+
+    try {
+      http.StreamedResponse response = await request.send();
+
+      if (response.statusCode == 200) {
+        var decodedResponse = jsonDecode(await response.stream.bytesToString());
+        if (checkError(decodedResponse)) {
+          return decodedResponse.toString();
+        } else {
+          return 'Error: ${decodedResponse['errorMessage']}';
+        }
+      } else {
+        return 'Error: ${response.reasonPhrase}';
+      }
+    } catch (e) {
+      return 'Error: ${e.toString()}';
+    }
+  }
+
+  Future<String> installment(
+      String binNumber, String merchantNumber, double amount) async {
+    var request = http.Request(
+        'GET',
+        Uri.parse(
+            '$baseUrl/v1/Installment?binNumber=$binNumber&amount=$amount&merchantNumber=$merchantNumber'));
+    request.headers.addAll(headers3dSession);
+
+    try {
+      http.StreamedResponse response = await request.send();
+
+      if (response.statusCode == 200) {
+        var decodedResponse = jsonDecode(await response.stream.bytesToString());
+        if (checkError(decodedResponse)) {
+          return decodedResponse.toString();
+        } else {
+          return 'Error: ${decodedResponse['errorMessage']}';
+        }
+      } else {
+        return 'Error: ${response.reasonPhrase}';
+      }
+    } catch (e) {
+      return 'Error: ${e.toString()}';
+    }
+  }
+
+  Future<String> _pointInquiry(String cardToken,
+      {String languageCode = "TR", String currency = "TRY"}) async {
+    var request =
+        http.Request('POST', Uri.parse('$baseUrl/v1/Payments/pointInquiry'));
+    request.headers.addAll(headers3dSession);
+
+    request.body = json.encode({
+      'cardToken': cardToken,
+      'languageCode': languageCode,
+      'currency': currency
     });
 
     try {

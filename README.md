@@ -15,9 +15,9 @@ Bu SDK'yı kullanabilmek için, [Parakolay](https://www.parakolay.com) tarafınd
 
 ### Gereksinimler
 
-- Dart 3.2.0 veya üzeri
+- Dart 3.1.5 veya üzeri
 - crypto 3.0.3
-- http 1.2.0
+- http 1.1.0
 - webview eklentisi
 
 ### Kurulum

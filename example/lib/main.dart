@@ -54,8 +54,8 @@ class _MyHomePageState extends State<MyHomePage> {
   String baseUrl = 'https://api.parakolay.com';
   String testUrl = 'https://api-test.parakolay.com';
 
-  int amount = 1;
-  int pointAmount = 0;
+  double amount = 1;
+  double pointAmount = 0;
 
   late Parakolay apiClient;
 
@@ -66,7 +66,7 @@ class _MyHomePageState extends State<MyHomePage> {
     String expireYear = 'EXPIRE_YEAR (YY)';
     String cvc = 'CVC';
     String callbackURL =
-        'http://localhost:8080/3d-callback'; //Should be changed with your callback URL
+        'http://localhost:8080/3d-callback'; //Needs to be changed with your callback URL
 
     return await apiClient.init3DS(
         cardNumber,
@@ -76,7 +76,8 @@ class _MyHomePageState extends State<MyHomePage> {
         cvc,
         amount,
         pointAmount,
-        callbackURL);
+        callbackURL,
+        currency: 'TRY');
   }
 
   @override
@@ -103,7 +104,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               onPressed: () async {
                 var result = await init3Ds();
-
+                print(result);
                 widget.browser.openData(data: result);
               },
               child: const Text("Start 3DS"),
@@ -119,9 +120,91 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
               onPressed: () async {
                 var result = await apiClient.complete3DS();
-                print(result); //Result of the payment process.
+                print(result);
               },
               child: const Text("Complete 3DS"),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.amber,
+                side: const BorderSide(
+                  color: Colors.amber,
+                ),
+                elevation: 0,
+              ),
+              onPressed: () async {
+                var result = await apiClient.returnAmount(amount, "ORDER_ID");
+                print(result);
+              },
+              child: const Text("Return"),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.amber,
+                side: const BorderSide(
+                  color: Colors.amber,
+                ),
+                elevation: 0,
+              ),
+              onPressed: () async {
+                var result = await apiClient.reverse("ORDER_ID");
+                print(result);
+              },
+              child: const Text("Reverse"),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.amber,
+                side: const BorderSide(
+                  color: Colors.amber,
+                ),
+                elevation: 0,
+              ),
+              onPressed: () async {
+                var result =
+                    await apiClient.binInfo("BIN_NUMBER (First 6 or 8 digits)");
+                print(result);
+              },
+              child: const Text("BinList"),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.amber,
+                side: const BorderSide(
+                  color: Colors.amber,
+                ),
+                elevation: 0,
+              ),
+              onPressed: () async {
+                var result = await apiClient.installment(
+                    "BIN_NUMBER (First 6 or 8 digits)", merchantNumber, amount);
+                print(result);
+              },
+              child: const Text("Installment"),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.amber,
+                side: const BorderSide(
+                  color: Colors.amber,
+                ),
+                elevation: 0,
+              ),
+              onPressed: () async {
+                var result = await apiClient.getPoints(
+                    "CARD_NUMBER",
+                    "CARDHOLDER_NAME",
+                    "EXPIRE_MONTH (MM)",
+                    "EXPIRE_YEAR (YY)",
+                    "CVV");
+                print(result);
+              },
+              child: const Text("PointInquiry"),
             ),
           ],
         ),
